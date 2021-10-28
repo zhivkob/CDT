@@ -14,6 +14,9 @@
 #include "CDT.h"
 #include "CDTUtils.h"
 
+#ifdef CDT_CXX11_IS_SUPPORTED
+#include <algorithm>
+#endif
 #include <cstddef>
 #include <iterator>
 #include <vector>
@@ -85,7 +88,11 @@ void generateGridVertices(
                 vTris.push_back(2 * (i - xres));
                 vTris.push_back(2 * (i - xres) + 1);
             }
+#ifdef CDT_CXX11_IS_SUPPORTED
+            *outTrisFirst++ = std::move(vTris);
+#else
             *outTrisFirst++ = vTris;
+#endif
         }
     }
 }
@@ -142,6 +149,8 @@ void generateGridTriangles(
  * super-triangle
  *
  * @tparam T type of vertex coordinates (e.g., float, double)
+ * @tparam TNearPointLocator class providing locating near point for efficiently
+ * inserting new points.
  * @param xmin minimum X-coordinate of grid
  * @param xmax maximum X-coordinate of grid
  * @param ymin minimum Y-coordinate of grid
@@ -150,7 +159,7 @@ void generateGridTriangles(
  * @param yres grid Y-resolution
  * @param out triangulation to initialize with grid super-geometry
  */
-template <typename T>
+template <typename T, typename TNearPointLocator>
 void initializeWithRegularGrid(
     const T xmin,
     const T xmax,
@@ -158,7 +167,7 @@ void initializeWithRegularGrid(
     const T ymax,
     const std::size_t xres,
     const std::size_t yres,
-    Triangulation<T>& out)
+    Triangulation<T, TNearPointLocator>& out)
 {
     std::vector<T> xcoords;
     std::vector<T> ycoords;
@@ -182,6 +191,8 @@ void initializeWithRegularGrid(
  * super-triangle. Irregular grid is given by collections of X- and Y-ticks
  *
  * @tparam T type of vertex coordinates (e.g., float, double)
+ * @tparam TNearPointLocator class providing locating near point for efficiently
+ * inserting new points.
  * @tparam TXCoordIter iterator dereferencing to X coordinate
  * @tparam TYCoordIter iterator dereferencing to Y coordinate
  * @param xfirst beginning of X-ticks range
@@ -190,13 +201,17 @@ void initializeWithRegularGrid(
  * @param ylast end of Y-ticks range
  * @param out triangulation to initialize with grid super-geometry
  */
-template <typename T, typename TXCoordIter, typename TYCoordIter>
+template <
+    typename T,
+    typename TNearPointLocator,
+    typename TXCoordIter,
+    typename TYCoordIter>
 void initializeWithIrregularGrid(
     const TXCoordIter xfirst,
     const TXCoordIter xlast,
     const TYCoordIter yfirst,
     const TYCoordIter ylast,
-    Triangulation<T>& out)
+    Triangulation<T, TNearPointLocator>& out)
 {
     const std::size_t xres = std::distance(xfirst, xlast) - 1;
     const std::size_t yres = std::distance(yfirst, ylast) - 1;
